@@ -1794,12 +1794,10 @@ EXPORT_SYMBOL(set_recovery_mode_done);
 
 static void msm_pm_power_off(void)
 {
-	printk("DEBUG: msm_pm_power_off \n");
 	msm_rpcrouter_close();
 #if !defined(CONFIG_MACH_EUROPA) && !defined(CONFIG_MACH_CALLISTO) && !defined(CONFIG_MACH_COOPER) && !defined(CONFIG_MACH_BENI) && !defined(CONFIG_MACH_TASS) && !defined(CONFIG_MACH_LUCAS)
 	msm_proc_comm(PCOM_POWER_DOWN, 0, 0);
 #else
-	set_recovery_mode_done();
 	smem_flag->info = 0x0;
 	printk("request_phone_power_off\n");
 	request_phone_power_off_reset(1);
@@ -1812,7 +1810,6 @@ static void msm_pm_power_off(void)
 
 static void msm_pm_restart(char str, const char *cmd)
 {
-	printk("DEBUG: msm_pm_restart \n");
 	is_modem_reset = 1;
 	pr_err("is_modem_reset = %d\n",is_modem_reset);
 	msm_rpcrouter_close();
@@ -1833,44 +1830,35 @@ static int msm_reboot_call
 	if ((code == SYS_RESTART) && _cmd) {
 		char *cmd = _cmd;
 		if (!strcmp(cmd, "bootloader")) {
-			printk("REBOOT MODE: bootloader \n");
 			restart_reason = 0x77665500;
 		} else if (!strcmp(cmd, "recovery")) {
-			printk("REBOOT MODE: recovery \n");
 #if defined(CONFIG_MACH_EUROPA) || defined(CONFIG_MACH_CALLISTO) || defined(CONFIG_MACH_COOPER) || defined(CONFIG_MACH_BENI) || defined(CONFIG_MACH_TASS) || defined(CONFIG_MACH_LUCAS) 
 			set_recovery_mode();
 #endif
 			restart_reason = 0x77665502;
 		} else if (!strcmp(cmd, "recovery_done")) { 
-			printk("REBOOT MODE: recovery_done \n");
 #if defined(CONFIG_MACH_EUROPA) || defined(CONFIG_MACH_CALLISTO) || defined(CONFIG_MACH_COOPER) || defined(CONFIG_MACH_BENI) || defined(CONFIG_MACH_TASS) || defined(CONFIG_MACH_LUCAS) 
 			set_recovery_mode_done();
 #endif
 			restart_reason = 0x77665503;
 		} else if (!strcmp(cmd, "download")) {
-			printk("REBOOT MODE: download \n");
 			restart_reason = 0x776655FF;
 		} else if (!strcmp(cmd, "eraseflash")) {
-			printk("REBOOT MODE: eraseflash \n");
 			restart_reason = 0x776655EF;
 		} else if (!strncmp(cmd, "oem-", 4)) {
-			printk("REBOOT MODE: oem- \n");
 			unsigned code = simple_strtoul(cmd + 4, 0, 16) & 0xff;
 			restart_reason = 0x6f656d00 | code;
 		} else {
-			printk("REBOOT MODE: \n");
 #if defined(CONFIG_MACH_EUROPA) || defined(CONFIG_MACH_CALLISTO) || defined(CONFIG_MACH_COOPER) || defined(CONFIG_MACH_BENI) || defined(CONFIG_MACH_TASS) || defined(CONFIG_MACH_LUCAS) 
 			set_recovery_mode_done();
 #endif
 			restart_reason = 0x77665501;
 		}
 	} else {
-		printk("DEBUG: (code != SYS_RESTART) || !_cmd) \n");
 #if defined(CONFIG_MACH_EUROPA) || defined(CONFIG_MACH_CALLISTO) || defined(CONFIG_MACH_COOPER) || defined(CONFIG_MACH_BENI) || defined(CONFIG_MACH_TASS) || defined(CONFIG_MACH_LUCAS) 
 		set_recovery_mode_done();
 #endif
 	}
-	printk("DEBUG: NOTIFY_DONE \n");
 	return NOTIFY_DONE;
 }
 
