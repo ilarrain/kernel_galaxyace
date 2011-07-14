@@ -1298,29 +1298,7 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 	     mfd->index, fbi->var.xres, fbi->var.yres, fbi->fix.smem_len);
 
 #ifdef CONFIG_FB_MSM_SEC_BOOTLOGO
-	// if (!load_565rle_image_onfb( "EUROPA.rle",0,99)) ;	/* Flip buffer */
-// 20100909 hongkuk.son for COOPER.rle ( booting logo )
-	// if (!load_565rle_image_onfb( "CALLISTO.rle",0,0)) ;	/* Flip buffer */
-
-#if defined(CONFIG_MACH_COOPER)
-	if (!load_565rle_image_onfb( "COOPER.rle",0,0)) ;	/* Flip buffer */
-#endif	
-
-#if defined(CONFIG_MACH_BENI)
-	if (!load_565rle_image_onfb( "BENI.rle",0,0)) ;	/* Flip buffer */
-#endif	
-
-#if defined(CONFIG_MACH_TASS)
-	if (!load_565rle_image_onfb( "TASS.rle",0,0)) ;	/* Flip buffer */
-#endif	
-
-#if defined(CONFIG_MACH_LUCAS)
-	if (!load_565rle_image_onfb( "LUCAS.rle",0,0)) ;	/* Flip buffer */
-#endif	
-
-#if defined(CONFIG_MACH_CALLISTO)
-	if (!load_565rle_image_onfb( "CALLISTO.rle",0,0)) ;	/* Flip buffer */
-#endif	
+	if (!load_565rle_image_onfb(INIT_IMAGE_FILE,0,0)) ;	/* Flip buffer */
 #endif
 	ret = 0;
 

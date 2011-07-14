@@ -397,9 +397,9 @@ static int msm_hsusb_ldo_init(int init)
 		vreg_enable(vreg_3p3);
 		vreg_disable(vreg_3p3);
 		vreg_put(vreg_3p3);
-}
+	}
 
-		return 0;
+	return 0;
 }
 
 static int msm_hsusb_pmic_notif_init(void (*callback)(int online), int init)
