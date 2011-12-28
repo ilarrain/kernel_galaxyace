@@ -17,8 +17,6 @@
  *
  */
 
-#define OVERCLOCK_AHB
-
 #include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -237,11 +235,22 @@ static struct clkctl_acpu_speed pll0_960_pll1_245_pll2_800[] = {
 	{ 0, 200000, ACPU_PLL_2, 2, 3,  66667, 2, 4,  61440 },
 	{ 1, 245760, ACPU_PLL_1, 1, 0, 122880, 1, 4,  61440 },
 	{ 1, 320000, ACPU_PLL_0, 4, 2, 160000, 1, 5, 122880 },
-	{ 0, 400000, ACPU_PLL_2, 2, 1, 133333, 2, 5, 122880 },
+	{ 0, 396800, ACPU_PLL_2, 2, 1, 132267, 2, 5, 122880 },
 	{ 1, 480000, ACPU_PLL_0, 4, 1, 160000, 2, 6, 122880 },
-	{ 1, 800000, ACPU_PLL_2, 2, 0, 200000, 3, 7, 122880 },
-	{ 0, 880000, ACPU_PLL_0, 4, 0, 220000, 3, 7, 122880 },
-	{ 0, 960000, ACPU_PLL_0, 4, 0, 240000, 3, 7, 122880 },
+	{ 1, 787200, ACPU_PLL_2, 2, 0, 196800, 3, 7, 122880 },
+	{ 1, 806400, ACPU_PLL_2, 2, 0, 201600, 3, 7, 122880 },
+	{ 1, 825600, ACPU_PLL_2, 2, 0, 206400, 3, 7, 122880 },
+	{ 1, 844800, ACPU_PLL_2, 2, 0, 211200, 3, 7, 122880 },
+	{ 1, 864000, ACPU_PLL_2, 2, 0, 216000, 3, 7, 122880 },
+	{ 1, 883200, ACPU_PLL_2, 2, 0, 220800, 3, 7, 122880 },
+	{ 1, 902400, ACPU_PLL_2, 2, 0, 225600, 3, 7, 122880 },
+	{ 1, 921600, ACPU_PLL_2, 2, 0, 230400, 3, 7, 122880 },
+	{ 1, 940800, ACPU_PLL_2, 2, 0, 235200, 3, 7, 122880 },
+	{ 1, 960000, ACPU_PLL_2, 2, 0, 240000, 3, 7, 122880 },
+	{ 1, 979200, ACPU_PLL_2, 2, 0, 244800, 3, 7, 122880 },
+	{ 1, 998400, ACPU_PLL_2, 2, 0, 249600, 3, 7, 122880 },
+	{ 1, 1017600, ACPU_PLL_2, 2, 0, 254400, 3, 7, 122880 },
+	{ 1, 1036800, ACPU_PLL_2, 2, 0, 259200, 3, 7, 122880 },
 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, {0, 0, 0}, {0, 0, 0} }
 };
 
@@ -445,19 +454,11 @@ static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
 	}
 
 	// Perform overclocking if requested
-	if(hunt_s->pll==0 && hunt_s->a11clk_khz>800000) {
-		// Change the speed of PLL0
-		writel(hunt_s->a11clk_khz/19200, PLLn_L_VAL(0));
+	if(hunt_s->a11clk_khz>787200) {
+		// Change the speed of PLL2
+		writel(hunt_s->a11clk_khz/19200, PLLn_L_VAL(2));
 		udelay(50);
 	}
-
-#if 0 //def OVERCLOCK_AHB
-	// Pump the PLL2 up another 19200kHz (overclock stock 600MHz from 595.2MHz to 604.8MHz)
-	if(hunt_s->pll==2 && hunt_s->a11clk_khz==800000) {
-		writel(63, PLLn_L_VAL(2));
-		udelay(50);
-	}
-#endif
 
 	/* Program clock source and divider */
 	reg_clkctl = readl(A11S_CLK_CNTL_ADDR);
@@ -471,9 +472,9 @@ static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
 	writel(reg_clksel, A11S_CLK_SEL_ADDR);
 
 	// Recover from overclocking
-	if(hunt_s->pll==0 && hunt_s->a11clk_khz<=600000) {
-		// Restore the speed of PLL0
-		writel(50, PLLn_L_VAL(0));
+	if(hunt_s->a11clk_khz<=787200) {
+		// Restore the speed of PLL2
+		writel(PLL_800_MHZ, PLLn_L_VAL(2));
 		udelay(50);
 	}
 
