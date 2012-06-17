@@ -10,6 +10,7 @@
  *
  * - Based on mmci.h
  */
+#include <linux/completion.h>
 
 #ifndef _MSM_SDCC_H
 #define _MSM_SDCC_H
@@ -274,8 +275,11 @@ struct msmsdcc_host {
 	u32					cmd_c;
 
 	unsigned int	mci_irqenable;
+
 	unsigned int	dummy_52_needed;
 	unsigned int	dummy_52_state;
+	struct completion dummy_52_comp;
+
 	unsigned int	sdio_irq_disabled;
 	struct wake_lock	sdio_wlock;
 	struct wake_lock	sdio_suspend_wlock;
@@ -283,8 +287,24 @@ struct msmsdcc_host {
 
 	unsigned int sdcc_irq_disabled;
 	struct timer_list req_tout_timer;
+	bool sdio_gpio_lpm;
+	bool irq_wake_enabled;
 };
 
 int msmsdcc_set_pwrsave(struct mmc_host *mmc, int pwrsave);
+int msmsdcc_sdio_al_lpm(struct mmc_host *mmc, bool enable);
+
+#ifdef CONFIG_MSM_SDIO_AL
+
+static inline int msmsdcc_lpm_enable(struct mmc_host *mmc)
+{
+	return msmsdcc_sdio_al_lpm(mmc, true);
+}
+
+static inline int msmsdcc_lpm_disable(struct mmc_host *mmc)
+{
+	return msmsdcc_sdio_al_lpm(mmc, false);
+}
+#endif
 
 #endif
