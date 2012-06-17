@@ -161,7 +161,7 @@ config MACH_COOPER
 	bool "Cooper"
 	help
 	  Support for the Samsung Cooper board.
-	  
+
 config MACH_BENI
 	depends on ARCH_MSM7X27
 	depends on !MSM_STACKED_MEMORY
@@ -184,8 +184,8 @@ config MACH_LUCAS
 	default n
 	bool "Lucas"
 	help
-	  Support for the Samsung Lucas board.	  	  
-	  
+	  Support for the Samsung Lucas board.
+
 config BOARD_REVISION
 	hex "Select H/W Revision"
 	depends on MACH_EUROPA || MACH_CALLISTO || MACH_COOPER || MACH_BENI || MACH_TASS || MACH_LUCAS
@@ -196,7 +196,7 @@ config 800MHZ
 	default y
 	help
 	  Support for the only cooper board.
-	  
+
 config MACH_TROUT
 	depends on ARCH_MSM7X01A
 	depends on MSM_STACKED_MEMORY
@@ -428,8 +428,8 @@ config PHYS_OFFSET
 	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_CALLISTO
 	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_COOPER
 	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_BENI
-	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_TASS	
-	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_LUCAS	
+	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_TASS
+	default "0x13600000" if !MSM_STACKED_MEMORY && MACH_LUCAS
 	default "0x00200000" if !MSM_STACKED_MEMORY && MACH_EUROPA
 	default "0x00000000" if ARCH_QSD8X50 && MSM_SOC_REV_A
 	default "0x20000000" if ARCH_QSD8X50
