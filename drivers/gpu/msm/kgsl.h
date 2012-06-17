@@ -106,6 +106,10 @@ struct kgsl_driver {
 	   platform */
 
 	unsigned int pt_va_size;
+
+	/* A structure for information about the pool of
+	   pagetable memory */
+
 	struct {
 		unsigned long *bitmap;
 		int entries;

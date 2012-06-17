@@ -168,7 +168,13 @@
 
 #define NR_SG		32
 
-#define MSM_MMC_IDLE_TIMEOUT	10000 /* msec */
+#define MSM_MMC_IDLE_TIMEOUT	10000 /* msecs */
+
+/*
+ * Set the request timeout to 10secs to allow
+ * bad cards/controller to respond.
+ */
+#define MSM_MMC_REQ_TIMEOUT	10000 /* msecs */
 
 
 /*

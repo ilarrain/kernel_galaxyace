@@ -1080,24 +1080,24 @@ msmsdcc_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	if (host->plat->dummy52_required) {
 		if (host->dummy_52_needed) {
-				host->dummy_52_state = DUMMY_52_STATE_SENT;
-				msmsdcc_start_command(host, &dummy52cmd,
-						      MCI_CPSM_PROGENA);
-				spin_unlock_irqrestore(&host->lock, flags);
-         			if (mrq->data && mrq->data->flags == MMC_DATA_WRITE) {
-        				if (mrq->cmd->opcode == SD_IO_RW_EXTENDED ||
-        					mrq->cmd->opcode == 54)
-        					host->dummy_52_needed = 1;
-        			} else {
-             				host->dummy_52_needed = 0;
-                		}
-				return;
+			host->dummy_52_state = DUMMY_52_STATE_SENT;
+			msmsdcc_start_command(host, &dummy52cmd,
+					      MCI_CPSM_PROGENA);
+			spin_unlock_irqrestore(&host->lock, flags);
+			if (mrq->data && mrq->data->flags == MMC_DATA_WRITE) {
+				if (mrq->cmd->opcode == SD_IO_RW_EXTENDED ||
+					mrq->cmd->opcode == 54)
+					host->dummy_52_needed = 1;
+			} else {
+				host->dummy_52_needed = 0;
 			}
+			return;
+		}
 		if (mrq->data && mrq->data->flags == MMC_DATA_WRITE) {
 			if (mrq->cmd->opcode == SD_IO_RW_EXTENDED ||
 				mrq->cmd->opcode == 54)
 				host->dummy_52_needed = 1;
-        	}
+		}
 	}
 	msmsdcc_request_start(host, mrq);
 	spin_unlock_irqrestore(&host->lock, flags);
@@ -1210,13 +1210,13 @@ msmsdcc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	if (!(clk & MCI_CLK_ENABLE) && host->clks_on) {
 		if (mmc->card && mmc->card->type == MMC_TYPE_SDIO) {
 			if (!host->plat->sdiowakeup_irq) {
-			writel(MCI_SDIOINTMASK, host->base + MMCIMASK0);
-			WARN_ON(host->sdcc_irq_disabled);
-			if (host->plat->cfg_mpm_sdiowakeup &&
+				writel(MCI_SDIOINTMASK, host->base + MMCIMASK0);
+				WARN_ON(host->sdcc_irq_disabled);
+				if (host->plat->cfg_mpm_sdiowakeup &&
 					(mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ))
-				host->plat->cfg_mpm_sdiowakeup(
-						mmc_dev(mmc), 1);
-			enable_irq_wake(host->irqres->start);
+					host->plat->cfg_mpm_sdiowakeup(
+							mmc_dev(mmc), 1);
+				enable_irq_wake(host->irqres->start);
 			} else {
 				writel(0, host->base + MMCIMASK0);
 			}
@@ -2007,15 +2007,15 @@ msmsdcc_runtime_suspend(struct device *dev)
 			mmc->ios.clock = 0;
 			mmc->ops->set_ios(host->mmc, &host->mmc->ios);
 
-		if (mmc->card && (mmc->card->type == MMC_TYPE_SDIO) &&
+			if (mmc->card && (mmc->card->type == MMC_TYPE_SDIO) &&
 				(mmc->pm_flags & MMC_PM_WAKE_SDIO_IRQ)) {
-			host->sdio_irq_disabled = 0;
-			if (host->plat->sdiowakeup_irq) {
-			enable_irq_wake(
-                                        host->plat->sdiowakeup_irq);
-			enable_irq(host->plat->sdiowakeup_irq);
-	                	}
-	        	}
+				host->sdio_irq_disabled = 0;
+				if (host->plat->sdiowakeup_irq) {
+					enable_irq_wake(
+						host->plat->sdiowakeup_irq);
+					enable_irq(host->plat->sdiowakeup_irq);
+				}
+			}
 		}
 		host->sdcc_suspending = 0;
 		mmc->suspend_task = NULL;
