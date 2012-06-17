@@ -308,7 +308,6 @@ static int config_buf(struct usb_configuration *config,
 	struct usb_function		*f;
 	int				status;
 	int				interfaceCount = 0;
-	int				intf_n =0;
 	u8 *dest;
 
 	/* write the config descriptor */
@@ -335,7 +334,6 @@ static int config_buf(struct usb_configuration *config,
 	list_for_each_entry(f, &config->functions, list) {
 		struct usb_descriptor_header **descriptors;
 		struct usb_descriptor_header *descriptor;
-		int redesc = 0;
 
 		if (speed == USB_SPEED_HIGH)
 			descriptors = f->hs_descriptors;
@@ -358,30 +356,13 @@ static int config_buf(struct usb_configuration *config,
 					intf->bInterfaceNumber = interfaceCount++;
 				else
 					intf->bInterfaceNumber = interfaceCount - 1;
-				config->interface[intf->bInterfaceNumber] = f; //interface numer dynamically setting
-				if(f->intf_num_set)
-					redesc = f->intf_num_set(config, f, intf->bInterfaceNumber);
-				printk("[%s]  [%d] %s\n", __func__,__LINE__, f->name);
 			}
 			dest += intf->bLength;
-		}
-
-		if(redesc){
-			if (speed == USB_SPEED_HIGH)
-				descriptors = f->hs_descriptors;
-			else
-				descriptors = f->descriptors;
-			status = usb_descriptor_fillbuf(next, len,
-				(const struct usb_descriptor_header **) descriptors);
-			if (status < 0)
-				return status;
 		}
 
 		len -= status;
 		next += status;
 	}
-	for(intf_n = interfaceCount; intf_n < MAX_CONFIG_INTERFACES; intf_n++)
-		config->interface[intf_n] =0;
 
 	len = next - buf;
 	c->wTotalLength = cpu_to_le16(len);
@@ -563,8 +544,7 @@ static int set_config(struct usb_composite_dev *cdev,
 		if (result < 0) {
 			DBG(cdev, "interface %d (%s/%p) alt 0 --> %d\n",
 					tmp, f->name, f, result);
-			printk("interface %d (%s/%p) alt 0 --> %d\n",
-					tmp, f->name, f, result);
+
 			reset_config(cdev);
 			goto done;
 		}
@@ -967,12 +947,28 @@ unknown:
 		 * take such requests too, if that's ever needed:  to work
 		 * in config 0, etc.
 		 */
-
 		switch (ctrl->bRequestType & USB_RECIP_MASK) {
 		case USB_RECIP_INTERFACE:
+
 			if (cdev->config == NULL)
 				return value;
-			f = cdev->config->interface[intf];
+
+			if (w_index >= cdev->config->next_interface_id)
+				return value;
+			/* Find correct function */
+			for (id = 0; id < MAX_CONFIG_INTERFACES; id++) {
+				f = cdev->config->interface[id];
+				if (!f)
+					break;
+				if (f->disabled)
+					continue;
+				if (!tmp)
+					break;
+				tmp--;
+			}
+
+			if (tmp)
+				f = NULL;
 			break;
 
 		case USB_RECIP_ENDPOINT:
@@ -1032,8 +1028,6 @@ unknown:
 
 done:
 	/* device either stalls (value < 0) or reports success */
-	if (cdev->mute_switch)
-		cdev->mute_switch = 0;
 	return value;
 }
 
@@ -1041,10 +1035,6 @@ static void composite_disconnect(struct usb_gadget *gadget)
 {
 	struct usb_composite_dev	*cdev = get_gadget_data(gadget);
 	unsigned long			flags;
-	
-#ifdef CONFIG_USB_SAMSUNG_VBUS_CHECK
-	int b_session=0;
-#endif
 
 	/* REVISIT:  should we have config and device level
 	 * disconnect callbacks?
@@ -1053,24 +1043,10 @@ static void composite_disconnect(struct usb_gadget *gadget)
 	if (cdev->config)
 		reset_config(cdev);
 
-/* mute switch bug fix  */	
-#ifdef CONFIG_USB_SAMSUNG_VBUS_CHECK
-	b_session= gadget->ops->get_vbus_state(gadget);
-
-	if (b_session && cdev->mute_switch)
-		cdev->mute_switch = 0;
-	else
-	{		
-		if ( cdev->mute_switch )
-			cdev->mute_switch=0;
-		schedule_work(&cdev->switch_work);
-	}
-#else
 	if (cdev->mute_switch)
 		cdev->mute_switch = 0;
 	else
 		schedule_work(&cdev->switch_work);
-#endif
 	spin_unlock_irqrestore(&cdev->lock, flags);
 }
 

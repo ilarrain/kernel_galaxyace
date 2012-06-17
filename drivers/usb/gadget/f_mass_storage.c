@@ -529,25 +529,6 @@ static void raise_exception(struct fsg_common *common, enum fsg_state new_state)
 	spin_unlock_irqrestore(&common->lock, flags);
 }
 
-/* string descriptors: */
-
-#define F_UMS_IDX	0
-
-/* static strings, in UTF-8 */
-static struct usb_string f_ums_string_defs[] = {
-	[F_UMS_IDX].s = "Android UMS",
-	{  /* ZEROES END LIST */ },
-};
-
-static struct usb_gadget_strings f_ums_string_table = {
-	.language =		0x0409,	/* en-us */
-	.strings =		f_ums_string_defs,
-};
-
-static struct usb_gadget_strings *f_ums_strings[] = {
-	&f_ums_string_table,
-	NULL,
-};
 
 /*-------------------------------------------------------------------------*/
 
@@ -628,7 +609,7 @@ static int fsg_setup(struct usb_function *f,
 
 	if (!fsg_is_set(fsg->common))
 		return -EOPNOTSUPP;
-	printk("%s %d w_index = %d fsg->interface_number %d\n", __func__, __LINE__, w_index, fsg->interface_number);
+
 	switch (ctrl->bRequest) {
 
 	case USB_BULK_RESET_REQUEST:
@@ -908,13 +889,11 @@ static int do_write(struct fsg_common *common)
 			curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
 			return -EINVAL;
 		}
-#ifndef CONFIG_USB_ANDROID_MASS_STORAGE		
 		if (common->cmnd[1] & 0x08) {	/* FUA */
 			spin_lock(&curlun->filp->f_lock);
 			curlun->filp->f_flags |= O_SYNC;
 			spin_unlock(&curlun->filp->f_lock);
 		}
-#endif
 	}
 	if (lba >= curlun->num_sectors) {
 		curlun->sense_data = SS_LOGICAL_BLOCK_ADDRESS_OUT_OF_RANGE;
@@ -1051,21 +1030,6 @@ static int do_write(struct fsg_common *common)
 
 			/* If an error occurred, report it and its position */
 			if (nwritten < amount) {
-#ifdef CONFIG_USB_CSW_HACK
-				/*
-				 * If csw is already sent & write failure
-				 * occured, then detach the storage media
-				 * from the corresponding lun, and cable must
-				 * be disconnected to recover fom this error.
-				 */
-				if (csw_hack_sent) {
-					if (!fsg_lun_is_open(curlun)) {
-						curlun->sense_data = SS_MEDIUM_NOT_PRESENT;
-						return -EINVAL;
-					}
-					break;
-				}
-#endif
 				curlun->sense_data = SS_WRITE_ERROR;
 				curlun->sense_data_info = file_offset >> 9;
 				curlun->info_valid = 1;
@@ -3121,15 +3085,6 @@ autoconf_fail:
 	return -ENOTSUPP;
 }
 
-static int
-fsg_interface_id_set(struct usb_configuration * c, struct usb_function *f, int intf_id)
-{
-	struct fsg_dev		*fsg = fsg_from_func(f);
-	
-	fsg->interface_number = intf_id;
-	return 0;
-}
-
 
 /****************************** ADD FUNCTION ******************************/
 
@@ -3154,20 +3109,13 @@ static int fsg_add(struct usb_composite_dev *cdev,
 		   struct fsg_common *common)
 {
 	struct fsg_dev *fsg;
-	int rc, status;
+	int rc;
 
 	fsg = kzalloc(sizeof *fsg, GFP_KERNEL);
 	if (unlikely(!fsg))
 		return -ENOMEM;
 
 	the_fsg = fsg;
-
-	/*ums id already is assigned in Debug USB off mode*/
-	status = usb_string_id(c->cdev);
-	if (status < 0)
-		return status;
-	f_ums_string_defs[F_UMS_IDX].id = status;
-	fsg_intf_desc.iInterface = status;
 
 	fsg->sdev.name = FUNCTION_NAME;
 	fsg->sdev.print_name = print_switch_name;
@@ -3181,14 +3129,12 @@ static int fsg_add(struct usb_composite_dev *cdev,
 #else
 	fsg->function.name        = FSG_DRIVER_DESC;
 #endif
-	fsg->function.strings     = f_ums_strings;
+	fsg->function.strings     = fsg_strings_array;
 	fsg->function.bind        = fsg_bind;
 	fsg->function.unbind      = fsg_unbind;
 	fsg->function.setup       = fsg_setup;
 	fsg->function.set_alt     = fsg_set_alt;
 	fsg->function.disable     = fsg_disable;
-
-	fsg->function.intf_num_set = fsg_interface_id_set;
 
 	fsg->common               = common;
 	/* Our caller holds a reference to common structure so we
