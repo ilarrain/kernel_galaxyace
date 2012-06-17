@@ -198,68 +198,6 @@ int kgsl_check_timestamp(struct kgsl_device *device, unsigned int timestamp)
 	return timestamp_cmp(ts_processed, timestamp);
 }
 
-/*** QCOM DEBUG CODE ***/
-extern int ringbuffer_protected_mode_flag;
-struct kgsl_functable stored_ftbl;
-
-void kgsl_print_ftbl(struct kgsl_functable *ftbl)
-{
-    KGSL_DRV_ERR("device_regread = 0x%p\n", ftbl->device_regread);
-    KGSL_DRV_ERR("device_setstate = 0x%p\n", ftbl->device_setstate);
-    KGSL_DRV_ERR("device_idle = 0x%p\n", ftbl->device_idle);
-    KGSL_DRV_ERR("device_isidle = 0x%p\n", ftbl->device_isidle);
-    KGSL_DRV_ERR("device_suspend_context = 0x%p\n", ftbl->device_suspend_context);
-    KGSL_DRV_ERR("device_resume_context = 0x%p\n", ftbl->device_resume_context);
-    KGSL_DRV_ERR("device_start = 0x%p\n", ftbl->device_start);
-    KGSL_DRV_ERR("device_stop = 0x%p\n", ftbl->device_stop);
-    KGSL_DRV_ERR("device_getproperty = 0x%p\n", ftbl->device_getproperty);
-    KGSL_DRV_ERR("device_waittimestamp = 0x%p\n", ftbl->device_waittimestamp);
-    KGSL_DRV_ERR("device_cmdstream_readtimestamp = 0x%p\n", ftbl->device_cmdstream_readtimestamp);
-    KGSL_DRV_ERR("device_issueibcmds = 0x%p\n", ftbl->device_issueibcmds);
-    KGSL_DRV_ERR("device_drawctx_create = 0x%p\n", ftbl->device_drawctxt_create);
-    KGSL_DRV_ERR("device_drawctx_destroy = 0x%p\n", ftbl->device_drawctxt_destroy);
-    KGSL_DRV_ERR("device_ioctl = 0x%p\n", ftbl->device_ioctl);
-    KGSL_DRV_ERR("device_setup_pt = 0x%p\n", ftbl->device_setup_pt);
-    KGSL_DRV_ERR("device_cleanup_pt = 0x%p\n", ftbl->device_cleanup_pt);
-}
-/*** QCOM DEBUG CODE ***/
-
-int kgsl_regread(struct kgsl_device *device, unsigned int offsetwords,
-			unsigned int *value)
-{
-	int status = -ENXIO;
-
-    /*** QCOM DEBUG CODE ***/
-    if (ringbuffer_protected_mode_flag)
-    {
-        if (memcmp(&stored_ftbl, &device->ftbl, sizeof(struct kgsl_functable)));
-        {
-            KGSL_DRV_ERR("function table corruption\n");
-            //kgsl_print_ftbl(&device->ftbl);
-            //kgsl_print_ftbl(&stored_ftbl);
-        }
-		ringbuffer_protected_mode_flag = 0;
-    }
-    /*** QCOM DEBUG CODE ***/
-
-	if (device->ftbl.device_regread)
-		status = device->ftbl.device_regread(device, offsetwords,
-					value);
-
-	return status;
-}
-
-int kgsl_regwrite(struct kgsl_device *device, unsigned int offsetwords,
-			unsigned int value)
-{
-	int status = -ENXIO;
-	if (device->ftbl.device_regwrite)
-		status = device->ftbl.device_regwrite(device, offsetwords,
-					value);
-
-	return status;
-}
-
 int kgsl_setstate(struct kgsl_device *device, uint32_t flags)
 {
 	int status = -ENXIO;
@@ -476,12 +414,10 @@ kgsl_put_process_private(struct kgsl_device *device,
 
 	list_del(&private->list);
 
-	spin_lock(&private->mem_lock);
 	list_for_each_entry_safe(entry, entry_tmp, &private->mem_list, list) {
 		list_del(&entry->list);
 		kgsl_destroy_mem_entry(entry);
 	}
-	spin_unlock(&private->mem_lock);
 
 #ifdef CONFIG_MSM_KGSL_MMU
 	if (private->pagetable != NULL)
@@ -763,9 +699,14 @@ static long kgsl_ioctl_device_regread(struct kgsl_device_private *dev_priv,
 		result = -EFAULT;
 		goto done;
 	}
-	result = dev_priv->device->ftbl.device_regread(dev_priv->device,
-						param.offsetwords,
-						&param.value);
+
+	if (param.offsetwords*sizeof(uint32_t) >=
+	    dev_priv->device->regspace.sizebytes) {
+		KGSL_DRV_ERR("invalid offset %d\n", param.offsetwords);
+		return -ERANGE;
+	}
+
+	kgsl_regread(dev_priv->device, param.offsetwords, &param.value);
 
 	if (result != 0)
 		goto done;
