@@ -386,6 +386,7 @@ static struct usb_mass_storage_platform_data mass_storage_pdata = {
 	.product        = "GT-S5570 Card",
 #endif
 	.release	= 0x0100,
+	.can_stall	= 1,
 };
 
 static struct platform_device usb_mass_storage_device = {
